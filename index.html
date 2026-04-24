@@ -22,43 +22,119 @@
     <div class="flex">
         <aside class="w-64 p-6 hidden md:block bg-white h-screen sticky top-16">
             <h3 class="font-bold mb-4">Kategorien</h3>
-            <ul class="space-y-2 text-sm text-gray-700">
-                <li class="hover:text-orange-600 cursor-pointer">Alle anzeigen</li>
-                <li class="hover:text-orange-600 cursor-pointer">HTML Templates</li>
-                <li class="hover:text-orange-600 cursor-pointer">Video Material HALLO CHRIS</li>
-                <li class="hover:text-orange-600 cursor-pointer">Blueprints</li>
-            </ul>
+            <ul id="category-list" class="space-y-2 text-sm text-gray-700"></ul>
         </aside>
 
         <main class="flex-1 p-6">
-            <h2 class="text-xl font-bold mb-4">Ergebnisse für "Alle Assets"</h2>
-            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-xl font-bold mb-1">Produktkatalog</h2>
+                    <p id="result-count" class="text-sm text-gray-500">Lade Produkte...</p>
                 </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <label for="searchInput" class="sr-only">Suche</label>
+                    <input id="searchInput" type="search" placeholder="Suche nach Produkten, Kategorien oder Stichworten..." class="w-full sm:w-96 p-3 rounded-lg border border-slate-300 shadow-sm focus:border-orange-400 focus:ring-orange-200 focus:ring-2 outline-none">
+                </div>
+            </div>
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
         </main>
     </div>
 
     <script>
-        // Simulierter Fetch der JSON Daten
-        const data = [
-            { "id": "1", "title": "Premium Dashboard UI", "category": "HTML/CSS", "price": "Gratis", "thumbnail": "https://via.placeholder.com/300x200" },
-            { "id": "2", "title": "E-Commerce Card System", "category": "UI Kit", "price": "€12.00", "thumbnail": "https://via.placeholder.com/300x200" }
-        ];
-
         const grid = document.getElementById('product-grid');
+        const categoryList = document.getElementById('category-list');
+        const resultCount = document.getElementById('result-count');
+        const searchInput = document.getElementById('searchInput');
 
-        data.forEach(item => {
-            grid.innerHTML += `
-                <div onclick="window.location.href='details.html?id=${item.id}'" class="bg-white border hover:shadow-xl transition cursor-pointer p-4 flex flex-col">
-                    <img src="${item.thumbnail}" class="w-full h-48 object-cover mb-4">
-                    <h3 class="font-semibold text-blue-600 hover:underline">${item.title}</h3>
-                    <p class="text-xs text-gray-500 mb-2">${item.category}</p>
-                    <div class="mt-auto">
-                        <span class="text-lg font-bold">${item.price}</span>
-                        <p class="text-xs text-green-600">Sofort verfügbar</p>
+        let products = [];
+        let selectedCategory = 'Alle anzeigen';
+
+        function renderProducts(items) {
+            resultCount.textContent = `${items.length} Produkt${items.length === 1 ? '' : 'e'} gefunden`;
+
+            if (!items.length) {
+                grid.innerHTML = `
+                    <div class="col-span-full bg-white border rounded-3xl p-10 text-center text-gray-600 shadow-sm">
+                        <h3 class="text-lg font-semibold mb-2">Keine Produkte gefunden</h3>
+                        <p class="text-sm">Versuche einen anderen Suchbegriff oder wähle eine andere Kategorie.</p>
                     </div>
-                </div>
-            `;
-        });
+                `;
+                return;
+            }
+
+            grid.innerHTML = items.map(item => `
+                <a href="details.html?id=${item.id}" class="block bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg transition duration-200">
+                    <img src="${item.thumbnail}" alt="${item.title}" class="w-full h-48 object-cover">
+                    <div class="p-4 h-full flex flex-col">
+                        <div class="mb-3">
+                            <p class="text-xs uppercase tracking-[0.2em] text-orange-500 font-bold">${item.category}</p>
+                            <h3 class="mt-2 text-lg font-semibold text-slate-900">${item.title}</h3>
+                        </div>
+                        <p class="text-sm text-slate-500 line-clamp-3">${item.description}</p>
+                        <div class="mt-auto pt-4 flex items-center justify-between">
+                            <span class="text-lg font-bold text-slate-900">${item.price}</span>
+                            <span class="text-xs text-green-600 font-semibold">Sofort verfügbar</span>
+                        </div>
+                    </div>
+                </a>
+            `).join('');
+        }
+
+        function renderCategories(categories) {
+            categoryList.innerHTML = categories.map(category => `
+                <li>
+                    <button type="button" data-category="${category}" class="w-full text-left px-3 py-2 rounded-xl transition hover:bg-orange-50 hover:text-orange-600 ${category === selectedCategory ? 'bg-orange-100 text-orange-700 font-semibold' : 'text-slate-700'}">
+                        ${category}
+                    </button>
+                </li>
+            `).join('');
+
+            categoryList.querySelectorAll('button').forEach(button => {
+                button.addEventListener('click', () => {
+                    selectedCategory = button.dataset.category;
+                    renderCategories(categories);
+                    filterProducts();
+                });
+            });
+        }
+
+        function getCategories(data) {
+            const unique = Array.from(new Set(data.map(item => item.category)));
+            return ['Alle anzeigen', ...unique];
+        }
+
+        function filterProducts() {
+            const query = searchInput.value.trim().toLowerCase();
+            let filtered = products;
+
+            if (selectedCategory !== 'Alle anzeigen') {
+                filtered = filtered.filter(item => item.category === selectedCategory);
+            }
+
+            if (query) {
+                filtered = filtered.filter(item => {
+                    return item.title.toLowerCase().includes(query) ||
+                        item.category.toLowerCase().includes(query) ||
+                        item.description.toLowerCase().includes(query);
+                });
+            }
+
+            renderProducts(filtered);
+        }
+
+        fetch('products.json')
+            .then(response => response.json())
+            .then(data => {
+                products = data;
+                renderCategories(getCategories(products));
+                renderProducts(products);
+            })
+            .catch(error => {
+                resultCount.textContent = 'Produktliste konnte nicht geladen werden.';
+                console.error('Fehler beim Laden der Produktdaten:', error);
+            });
+
+        searchInput.addEventListener('input', filterProducts);
     </script>
 </body>
 </html>

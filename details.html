@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Produktdetail</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans">
+    <header class="bg-white border-b sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+            <a href="index.html" class="inline-flex items-center gap-2 text-slate-700 hover:text-orange-600">
+                <span class="text-xl">←</span>
+                <span>Zurück zum Katalog</span>
+            </a>
+            <div class="text-sm text-slate-500">Produktdetails & Vorschau</div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-6 py-8 space-y-8">
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                    <iframe id="preview-frame" src="" class="w-full h-[420px] bg-slate-100"></iframe>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+                        <h2 class="text-sm uppercase tracking-[0.2em] text-orange-500 font-bold">Produktinfo</h2>
+                        <div class="mt-4 space-y-3 text-sm text-slate-600">
+                            <p><span class="font-semibold">Kategorie:</span> <span id="product-category"></span></p>
+                            <p><span class="font-semibold">Preis:</span> <span id="product-price"></span></p>
+                            <p><span class="font-semibold">Format:</span> <span id="product-format"></span></p>
+                        </div>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+                        <h2 class="text-sm uppercase tracking-[0.2em] text-orange-500 font-bold">Technische Details</h2>
+                        <div id="product-specs" class="mt-4 space-y-3 text-sm text-slate-600"></div>
+                    </div>
+                </div>
+            </div>
+            <aside class="space-y-6">
+                <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                    <h1 id="product-title" class="text-3xl font-bold text-slate-900"></h1>
+                    <p id="product-description" class="mt-4 text-slate-600 leading-relaxed"></p>
+                    <div id="product-features" class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                    <h2 class="text-sm uppercase tracking-[0.2em] text-orange-500 font-bold">Download</h2>
+                    <p class="mt-3 text-slate-600 text-sm">Das Produkt steht nach dem Klick zur Ansicht bereit. Für die echte Bereitstellung kannst du hier eigene Download-Links eintragen.</p>
+                    <a id="download-link" href="#" class="inline-flex items-center justify-center w-full mt-5 rounded-2xl bg-orange-500 text-white py-3 font-semibold hover:bg-orange-600 transition">Produkt herunterladen</a>
+                </div>
+            </aside>
+        </section>
+
+        <section class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+            <h2 class="text-xl font-semibold mb-4">Weitere Informationen</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-sm uppercase tracking-[0.2em] text-orange-500 font-bold mb-3">Produktdetails</h3>
+                    <ul id="product-details" class="space-y-2 text-sm text-slate-600"></ul>
+                </div>
+                <div>
+                    <h3 class="text-sm uppercase tracking-[0.2em] text-orange-500 font-bold mb-3">Systemanforderungen</h3>
+                    <ul id="system-requirements" class="space-y-2 text-sm text-slate-600"></ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const productId = new URLSearchParams(window.location.search).get('id');
+        const productTitle = document.getElementById('product-title');
+        const productDescription = document.getElementById('product-description');
+        const productCategory = document.getElementById('product-category');
+        const productPrice = document.getElementById('product-price');
+        const productFormat = document.getElementById('product-format');
+        const previewFrame = document.getElementById('preview-frame');
+        const productFeatures = document.getElementById('product-features');
+        const productSpecs = document.getElementById('product-specs');
+        const productDetails = document.getElementById('product-details');
+        const systemRequirements = document.getElementById('system-requirements');
+        const downloadLink = document.getElementById('download-link');
+
+        function renderFeatureChip(text) {
+            return `<span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">${text}</span>`;
+        }
+
+        function renderList(obj) {
+            return Object.entries(obj).map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`).join('');
+        }
+
+        fetch('products.json')
+            .then(response => response.json())
+            .then(products => {
+                const product = products.find(item => item.id === productId);
+
+                if (!product) {
+                    productTitle.textContent = 'Produkt nicht gefunden';
+                    productDescription.textContent = 'Bitte prüfe den Link oder kehre zurück zum Katalog.';
+                    return;
+                }
+
+                document.title = `${product.title} – Produktdetail`;
+                productTitle.textContent = product.title;
+                productDescription.textContent = product.description;
+                productCategory.textContent = product.category;
+                productPrice.textContent = product.price;
+                productFormat.textContent = product.specs?.Dateiformat || 'Unbekannt';
+                previewFrame.src = product.previewUrl || 'https://via.placeholder.com/1200x800.png?text=Preview';
+                downloadLink.href = product.downloadUrl || '#';
+
+                if (product.features) {
+                    productFeatures.innerHTML = product.features.map(renderFeatureChip).join('');
+                }
+
+                if (product.details) {
+                    productDetails.innerHTML = renderList(product.details);
+                } else {
+                    productDetails.innerHTML = '<li>Vollständige Beschreibung und Implementierungstipps sind im Produkt enthalten.</li>';
+                }
+
+                if (product.specs) {
+                    systemRequirements.innerHTML = renderList(product.specs);
+                }
+            })
+            .catch(error => {
+                productTitle.textContent = 'Fehler beim Laden der Produktdetails';
+                productDescription.textContent = 'Bitte versuche es später erneut.';
+                console.error('Fehler beim Laden der Produktdetails:', error);
+            });
+    </script>
+</body>
+</html>
