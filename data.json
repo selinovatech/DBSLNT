@@ -1,0 +1,24 @@
+[
+  {
+    "id": "1",
+    "title": "Premium Dashboard UI",
+    "category": "HTML/CSS",
+    "price": "Free",
+    "thumbnail": "https://via.placeholder.com/300x200?text=Dashboard+Preview",
+    "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4",
+    "htmlFile": "templates/dashboard.html",
+    "description": "Ein modernes Admin-Panel mit Sidebar und Statistiken.",
+    "specs": "Framework: Tailwind CSS, Icons: Lucide, Responsive: Ja"
+  },
+  {
+    "id": "2",
+    "title": "E-Commerce Card System",
+    "category": "UI Kit",
+    "price": "€12.00",
+    "thumbnail": "https://via.placeholder.com/300x200?text=Card+System",
+    "videoUrl": "",
+    "htmlFile": "templates/cards.html",
+    "description": "Grid-System für Produktanzeigen im Amazon-Stil.",
+    "specs": "HTML5, Flexbox, Hover-Effekte"
+  }
+]

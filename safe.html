@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Workspace Pro | Firebase Cloud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Konfiguration (wird automatisch durch die Umgebung befüllt)
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // State Management
+        let currentUser = null;
+        let assets = [];
+
+        // 1. Authentifizierung (Regel 3: Erst Auth, dann Firestore)
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth Fehler:", error);
+            }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                // Regel 1: Pfad-Struktur einhalten
+                const assetsRef = collection(db, 'artifacts', appId, 'public', 'data', 'assets');
+                
+                // Echtzeit-Listener (Regel 2: Einfache Query)
+                onSnapshot(assetsRef, (snapshot) => {
+                    assets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderAll();
+                }, (error) => {
+                    console.error("Firestore Fehler:", error);
+                });
+            }
+        });
+
+        initAuth();
+
+        // UI Logik & Globale Funktionen für das Interface
+        window.switchView = (viewId) => {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
+            document.getElementById('view-' + viewId).classList.remove('hidden');
+            
+            document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+            if(viewId === 'user-home') document.getElementById('nav-home').classList.add('active');
+            if(viewId === 'admin-dashboard') document.getElementById('nav-admin').classList.add('active');
+        };
+
+        window.openAsset = (id) => {
+            const item = assets.find(a => a.id === id);
+            if(!item) return;
+            document.getElementById('detail-title').innerText = item.title;
+            document.getElementById('detail-desc').innerText = item.description;
+            document.getElementById('preview-iframe').src = item.url || 'about:blank';
+            document.getElementById('detail-meta').innerHTML = `
+                <div class="flex justify-between border-b pb-2"><span>Typ:</span><b>${item.category}</b></div>
+                <div class="flex justify-between border-b pb-2"><span>Status:</span><b class="text-green-600">Live</b></div>
+                <div class="flex justify-between"><span>ID:</span><span class="text-[10px] font-mono">${item.id}</span></div>
+            `;
+            switchView('asset-detail');
+        };
+
+        window.addAssetToCloud = async (e) => {
+            e.preventDefault();
+            if(!currentUser) return;
+
+            const newAsset = {
+                title: document.getElementById('form-title').value,
+                category: document.getElementById('form-category').value,
+                url: document.getElementById('form-url').value,
+                description: document.getElementById('form-desc').value,
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                const assetsRef = collection(db, 'artifacts', appId, 'public', 'data', 'assets');
+                await addDoc(assetsRef, newAsset);
+                closeModal();
+                e.target.reset();
+            } catch (err) {
+                console.error("Upload fehlgeschlagen:", err);
+            }
+        };
+
+        window.deleteAssetFromCloud = async (id) => {
+            if(!currentUser) return;
+            if(confirm('Asset unwiderruflich aus der Cloud löschen?')) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'assets', id);
+                await deleteDoc(docRef);
+            }
+        };
+
+        function renderAll() {
+            renderGrid();
+            renderTable();
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('user-asset-grid');
+            grid.innerHTML = assets.map(item => `
+                <div onclick="openAsset('${item.id}')" class="bg-white border rounded-xl overflow-hidden cursor-pointer hover:shadow-lg transition group">
+                    <div class="h-32 bg-gray-100 flex items-center justify-center border-b relative">
+                        <span class="material-icons-outlined text-4xl text-gray-400 group-hover:text-blue-500 transition">
+                            ${item.category.includes('Video') ? 'movie' : 'code'}
+                        </span>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="text-sm font-medium text-gray-900 truncate">${item.title}</h3>
+                        <p class="text-[10px] font-bold text-blue-600 uppercase tracking-tighter mt-1">${item.category}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderTable() {
+            const table = document.getElementById('admin-table-body');
+            table.innerHTML = assets.map(item => `
+                <tr class="border-b hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 font-medium text-gray-800">${item.title}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${item.category}</td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="deleteAssetFromCloud('${item.id}')" class="text-gray-400 hover:text-red-600 p-2 transition">
+                            <span class="material-icons-outlined text-sm">delete</span>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.openModal = () => document.getElementById('upload-modal').classList.add('active');
+        window.closeModal = () => document.getElementById('upload-modal').classList.remove('active');
+    </script>
+
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f8f9fa; }
+        .google-sans { font-family: 'Google Sans', sans-serif; }
+        .sidebar-item:hover, .sidebar-item.active { background-color: #e8f0fe; color: #1967d2; border-radius: 0 25px 25px 0; }
+        .sidebar-item.active { font-weight: 500; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .modal.active { display: flex; }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="h-16 border-b bg-white flex items-center px-4 shrink-0 z-50">
+        <div class="flex items-center w-64">
+            <span class="material-icons-outlined text-gray-600 mr-3 cursor-pointer p-2 hover:bg-gray-100 rounded-full">menu</span>
+            <div class="flex items-center">
+                <span class="material-icons-outlined text-blue-600 text-3xl mr-2">cloud_queue</span>
+                <span class="text-lg text-gray-700 google-sans font-medium tracking-tight">Cloud Workspace</span>
+            </div>
+        </div>
+        
+        <div class="flex-1 flex justify-center">
+            <div class="w-full max-w-2xl bg-gray-100 rounded-lg flex items-center px-4 py-1.5 focus-within:bg-white focus-within:shadow-md transition-all">
+                <span class="material-icons-outlined text-gray-400 mr-3">search</span>
+                <input type="text" placeholder="Cloud Assets durchsuchen..." class="bg-transparent w-full outline-none text-gray-700 text-sm">
+            </div>
+        </div>
+
+        <div class="w-64 flex justify-end items-center space-x-2">
+            <button onclick="switchView('admin-dashboard')" class="p-2 hover:bg-gray-100 rounded-full text-gray-600">
+                <span class="material-icons-outlined">settings</span>
+            </button>
+            <div class="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">A</div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 pt-4 pr-2 shrink-0 border-r bg-white hidden md:block">
+            <nav class="flex flex-col space-y-1">
+                <div onclick="switchView('user-home')" id="nav-home" class="sidebar-item active px-6 py-3 flex items-center cursor-pointer transition-all">
+                    <span class="material-icons-outlined mr-4">folder_open</span>
+                    <span class="text-sm">Workspace Explorer</span>
+                </div>
+                <div onclick="switchView('admin-dashboard')" id="nav-admin" class="sidebar-item px-6 py-3 flex items-center cursor-pointer transition-all">
+                    <span class="material-icons-outlined mr-4">admin_panel_settings</span>
+                    <span class="text-sm">Admin Dashboard</span>
+                </div>
+                <div class="border-t my-4 mx-6"></div>
+                <div class="px-8 py-2 text-[10px] font-bold text-gray-400 uppercase">Cloud Status</div>
+                <div class="px-8 py-1 flex items-center text-xs text-green-600 font-medium">
+                    <span class="h-1.5 w-1.5 rounded-full bg-green-500 mr-2"></span> Aktiv & Sicher
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Content -->
+        <main class="flex-1 overflow-y-auto p-6 lg:p-10" id="main-content">
+            
+            <!-- Explorer View -->
+            <section id="view-user-home" class="view-section">
+                <div class="flex items-center justify-between mb-8">
+                    <h1 class="text-2xl text-gray-800 google-sans">Zuletzt verwendete Assets</h1>
+                </div>
+                <div id="user-asset-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <!-- Cards -->
+                </div>
+            </section>
+
+            <!-- Admin View -->
+            <section id="view-admin-dashboard" class="view-section hidden">
+                <div class="flex items-center justify-between mb-8">
+                    <h1 class="text-2xl text-gray-800 google-sans">Asset Management</h1>
+                    <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium flex items-center shadow-sm text-sm">
+                        <span class="material-icons-outlined mr-2">upload</span> Asset hinzufügen
+                    </button>
+                </div>
+                <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 border-b">
+                            <tr>
+                                <th class="px-6 py-3 font-bold text-gray-600">Asset Name</th>
+                                <th class="px-6 py-3 font-bold text-gray-600">Kategorie</th>
+                                <th class="px-6 py-3 text-right">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Detail View -->
+            <section id="view-asset-detail" class="view-section hidden">
+                <div class="flex items-center mb-6">
+                    <button onclick="switchView('user-home')" class="p-2 hover:bg-gray-200 rounded-full mr-4 transition">
+                        <span class="material-icons-outlined">arrow_back</span>
+                    </button>
+                    <h2 id="detail-title" class="text-xl font-bold google-sans">Asset Name</h2>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2">
+                        <div class="bg-white border rounded-xl shadow-lg overflow-hidden h-[500px] lg:h-[650px]">
+                            <iframe id="preview-iframe" src="" class="w-full h-full"></iframe>
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="bg-white p-5 rounded-xl border">
+                            <h3 class="font-bold text-sm text-gray-400 uppercase mb-3">Beschreibung</h3>
+                            <p id="detail-desc" class="text-gray-700 text-sm leading-relaxed"></p>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border">
+                            <h3 class="font-bold text-sm text-gray-400 uppercase mb-3">Metadaten</h3>
+                            <div id="detail-meta" class="space-y-3 text-sm text-gray-600"></div>
+                        </div>
+                        <button class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-lg">
+                            Asset Paket laden
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div id="upload-modal" class="modal">
+        <div class="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl mx-4">
+            <h2 class="text-xl google-sans font-bold mb-6">Neues Asset in Cloud speichern</h2>
+            <form onsubmit="addAssetToCloud(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Asset Titel</label>
+                    <input type="text" id="form-title" required class="w-full border rounded-xl p-3 outline-none focus:border-blue-500 bg-gray-50">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Kategorie</label>
+                        <select id="form-category" class="w-full border rounded-xl p-3 outline-none bg-gray-50">
+                            <option>HTML Template</option>
+                            <option>Video Material</option>
+                            <option>UI Kit</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Vorschau URL</label>
+                        <input type="url" id="form-url" placeholder="https://..." class="w-full border rounded-xl p-3 outline-none bg-gray-50">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Beschreibung</label>
+                    <textarea id="form-desc" rows="3" class="w-full border rounded-xl p-3 outline-none bg-gray-50"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeModal()" class="px-5 py-2 text-gray-500 hover:bg-gray-100 rounded-xl">Abbrechen</button>
+                    <button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded-xl font-bold">Cloud Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

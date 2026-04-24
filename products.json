@@ -1,0 +1,10 @@
+{
+  "id": "001",
+  "title": "Modern Login Form",
+  "category": "HTML/CSS",
+  "thumbnail": "assets/images/login-preview.jpg",
+  "video": "assets/videos/login-demo.mp4",
+  "html_path": "assets/html-templates/login/index.html",
+  "description": "Ein responsives Login-Formular mit Darkmode-Support.",
+  "setup_info": "1. CSS einbinden, 2. HTML kopieren, 3. Fertig!"
+}

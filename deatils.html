@@ -1,0 +1,51 @@
+<div class="bg-gray-800 text-white p-2 flex justify-center space-x-4 rounded-t-lg">
+    <button onclick="resizePreview('100%')" class="px-3 py-1 bg-gray-600 rounded hover:bg-blue-500">Desktop</button>
+    <button onclick="resizePreview('768px')" class="px-3 py-1 bg-gray-600 rounded hover:bg-blue-500">Tablet</button>
+    <button onclick="resizePreview('375px')" class="px-3 py-1 bg-gray-600 rounded hover:bg-blue-500">Mobil</button>
+</div>
+
+<div class="border-x-8 border-b-8 border-gray-800 shadow-2xl transition-all duration-500 mx-auto overflow-hidden" id="preview-wrapper" style="width: 100%;">
+    <iframe id="main-frame" src="" class="w-full h-[500px] bg-white"></iframe>
+</div>
+
+<div class="mt-10 border-t pt-6">
+    <h3 class="text-2xl font-bold mb-4">Technische Details & Aufbau</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-gray-50 p-6 rounded">
+        <div>
+            <h4 class="font-bold border-b pb-2 mb-2">Systemvoraussetzungen</h4>
+            <ul id="system-list" class="space-y-1 text-sm text-gray-700">
+                </ul>
+        </div>
+        <div>
+            <h4 class="font-bold border-b pb-2 mb-2">Installations-Anleitung</h4>
+            <pre class="bg-black text-green-400 p-3 rounded text-xs">
+1. Datei entpacken
+2. index.html im Browser öffnen
+3. Assets in den /images Ordner kopieren
+            </pre>
+        </div>
+    </div>
+</div>
+
+<script>
+function resizePreview(width) {
+    document.getElementById('preview-wrapper').style.width = width;
+}
+
+// Daten laden basierend auf URL ID
+async function initDetails() {
+    const id = new URLSearchParams(window.location.search).get('id');
+    const res = await fetch('data.json');
+    const data = await res.json();
+    const item = data.find(p => p.id === id);
+
+    if(item) {
+        document.getElementById('main-frame').src = item.previewUrl;
+        const list = document.getElementById('system-list');
+        for(let [key, value] of Object.entries(item.systemInfo)) {
+            list.innerHTML += `<li><b>${key}:</b> ${value}</li>`;
+        }
+    }
+}
+initDetails();
+</script>

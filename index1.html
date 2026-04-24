@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Workspace Pro | Admin & Cloud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f8f9fa; height: 100vh; overflow: hidden; }
+        .google-sans { font-family: 'Google Sans', sans-serif; }
+        .sidebar-item:hover, .sidebar-item.active { background-color: #e8f0fe; color: #1967d2; border-radius: 0 25px 25px 0; }
+        .sidebar-item.active { font-weight: 500; }
+        .admin-card { transition: all 0.2s ease; border: 1px solid #e0e0e0; }
+        .admin-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-color: #1a73e8; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <!-- Global Header -->
+    <header class="h-16 border-b bg-white flex items-center px-4 shrink-0 z-50">
+        <div class="flex items-center w-64">
+            <span class="material-icons-outlined text-gray-600 mr-3 cursor-pointer p-2 hover:bg-gray-100 rounded-full">menu</span>
+            <div class="flex items-center">
+                <span class="material-icons-outlined text-blue-600 text-3xl mr-2">cloud_done</span>
+                <span class="text-xl text-gray-700 google-sans">Cloud Workspace</span>
+            </div>
+        </div>
+        
+        <div class="flex-1 flex justify-center">
+            <div class="w-full max-w-2xl bg-gray-100 rounded-lg flex items-center px-4 py-2 focus-within:bg-white focus-within:shadow-md transition-all">
+                <span class="material-icons-outlined text-gray-500 mr-3">search</span>
+                <input type="text" id="global-search" placeholder="Assets oder Dokumentation suchen..." class="bg-transparent w-full outline-none text-gray-700">
+            </div>
+        </div>
+
+        <div class="w-64 flex justify-end items-center space-x-4">
+            <button onclick="toggleAdminView()" id="admin-toggle" class="flex items-center px-4 py-1.5 rounded-full border border-gray-300 hover:bg-gray-50 text-sm font-medium text-gray-700 transition">
+                <span class="material-icons-outlined text-sm mr-2">admin_panel_settings</span> Admin Panel
+            </button>
+            <div class="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">A</div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 pt-4 pr-2 shrink-0 border-r bg-white">
+            <nav class="flex flex-col space-y-1">
+                <div onclick="switchView('user-home')" class="sidebar-item active px-6 py-3 flex items-center cursor-pointer transition-all">
+                    <span class="material-icons-outlined mr-4">grid_view</span>
+                    <span class="text-sm">Workspace Explorer</span>
+                </div>
+                <div onclick="switchView('admin-dashboard')" id="nav-admin" class="sidebar-item px-6 py-3 flex items-center cursor-pointer transition-all">
+                    <span class="material-icons-outlined mr-4">dashboard_customize</span>
+                    <span class="text-sm">Admin Dashboard</span>
+                </div>
+                <div class="sidebar-item px-6 py-3 flex items-center cursor-pointer transition-all">
+                    <span class="material-icons-outlined mr-4">storage</span>
+                    <span class="text-sm">Cloud Storage</span>
+                </div>
+                <div class="border-t my-4 mx-6"></div>
+                <div class="px-8 py-2 text-xs font-bold text-gray-400 uppercase tracking-widest">Projekt Status</div>
+                <div class="px-8 py-2 flex items-center text-xs text-green-600">
+                    <span class="h-2 w-2 rounded-full bg-green-500 mr-2"></span> Synchronisiert
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-8" id="main-scroll">
+            
+            <!-- VIEW: USER EXPLORER (The Google Style Grid) -->
+            <section id="view-user-home" class="view-section">
+                <div class="flex items-center justify-between mb-8">
+                    <h1 class="text-2xl text-gray-800 google-sans">Cloud Assets</h1>
+                    <div class="text-sm text-gray-500">Zuletzt aktualisiert: Heute, 14:30</div>
+                </div>
+                <div id="user-asset-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Cards will be rendered here -->
+                </div>
+            </section>
+
+            <!-- VIEW: ADMIN DASHBOARD (Management) -->
+            <section id="view-admin-dashboard" class="view-section hidden">
+                <div class="flex items-center justify-between mb-8">
+                    <h1 class="text-2xl text-gray-800 google-sans italic">Management Console</h1>
+                    <button onclick="openUploadModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium flex items-center shadow-md transition">
+                        <span class="material-icons-outlined mr-2">add</span> Neues Asset hinzufügen
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl border overflow-hidden shadow-sm">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 border-b">
+                            <tr>
+                                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Asset</th>
+                                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Kategorie</th>
+                                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Status</th>
+                                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-right">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body">
+                            <!-- Table rows will be rendered here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- VIEW: ASSET DETAIL (The Viewer) -->
+            <section id="view-asset-detail" class="view-section hidden">
+                <div class="flex items-center mb-6">
+                    <button onclick="switchView('user-home')" class="p-2 hover:bg-gray-200 rounded-full mr-4 transition">
+                        <span class="material-icons-outlined">arrow_back</span>
+                    </button>
+                    <h2 id="detail-title" class="text-2xl font-bold google-sans">Asset Name</h2>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 space-y-4">
+                        <div class="bg-gray-800 p-2 rounded-t-xl flex justify-center space-x-2">
+                            <div class="h-3 w-3 rounded-full bg-red-500"></div>
+                            <div class="h-3 w-3 rounded-full bg-yellow-500"></div>
+                            <div class="h-3 w-3 rounded-full bg-green-500"></div>
+                        </div>
+                        <div class="bg-white border rounded-b-xl shadow-xl overflow-hidden h-[600px]">
+                            <iframe id="preview-iframe" src="" class="w-full h-full border-none"></iframe>
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="bg-white p-6 rounded-xl border shadow-sm">
+                            <h3 class="font-bold mb-2">Beschreibung</h3>
+                            <p id="detail-desc" class="text-gray-600 text-sm leading-relaxed"></p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl border shadow-sm">
+                            <h3 class="font-bold mb-4">Cloud Info</h3>
+                            <div id="detail-meta" class="space-y-2 text-sm"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MODAL: UPLOAD / EDIT -->
+    <div id="upload-modal" class="modal">
+        <div class="bg-white rounded-2xl w-full max-w-xl p-8 shadow-2xl">
+            <h2 class="text-2xl google-sans mb-6">Asset in Cloud speichern</h2>
+            <form id="asset-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Titel des Assets</label>
+                    <input type="text" id="form-title" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Kategorie</label>
+                        <select id="form-category" class="w-full border rounded-lg p-2.5 outline-none">
+                            <option>HTML Template</option>
+                            <option>Video Asset</option>
+                            <option>UI Blueprint</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">ID (Eindeutig)</label>
+                        <input type="text" id="form-id" required class="w-full border rounded-lg p-2.5 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">URL zur HTML/Vorschau Datei</label>
+                    <input type="url" id="form-url" placeholder="https://cloud-storage.com/file.html" class="w-full border rounded-lg p-2.5 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Kurzbeschreibung</label>
+                    <textarea id="form-desc" rows="3" class="w-full border rounded-lg p-2.5 outline-none"></textarea>
+                </div>
+                <div class="flex justify-end space-x-4 pt-4">
+                    <button type="button" onclick="closeUploadModal()" class="px-6 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">Abbrechen</button>
+                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium shadow-md hover:bg-blue-700">Speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Lokaler Speicher-Service (Simuliert Cloud/Firebase)
+        let db = JSON.parse(localStorage.getItem('cloud_assets')) || [
+            { id: "001", title: "Modern Landing Page", category: "HTML Template", url: "https://www.wikipedia.org", desc: "Professionelle Landing Page für Startups." },
+            { id: "002", title: "Corporate Video Intro", category: "Video Asset", url: "", desc: "4K Intro Video für Business Präsentationen." }
+        ];
+
+        function saveData() {
+            localStorage.setItem('cloud_assets', JSON.stringify(db));
+            renderAll();
+        }
+
+        // View Switcher
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
+            document.getElementById('view-' + viewId).classList.remove('hidden');
+            
+            // Sidebar Active State
+            document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+            if(viewId === 'user-home') document.querySelector('.sidebar-item').classList.add('active');
+            if(viewId === 'admin-dashboard') document.getElementById('nav-admin').classList.add('active');
+        }
+
+        function toggleAdminView() {
+            const current = document.getElementById('view-admin-dashboard').classList.contains('hidden');
+            switchView(current ? 'admin-dashboard' : 'user-home');
+        }
+
+        // Render Functions
+        function renderAll() {
+            renderUserGrid();
+            renderAdminTable();
+        }
+
+        function renderUserGrid() {
+            const grid = document.getElementById('user-asset-grid');
+            grid.innerHTML = db.map(item => `
+                <div onclick="openAsset('${item.id}')" class="bg-white border rounded-xl overflow-hidden cursor-pointer hover:shadow-md transition">
+                    <div class="h-32 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center border-b">
+                        <span class="material-icons-outlined text-4xl text-blue-400">
+                            ${item.category.includes('Video') ? 'movie' : 'code'}
+                        </span>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="text-sm font-medium text-gray-900 truncate">${item.title}</h3>
+                        <p class="text-xs text-gray-500 mt-1">${item.category}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderAdminTable() {
+            const table = document.getElementById('admin-table-body');
+            table.innerHTML = db.map(item => `
+                <tr class="border-b hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 font-medium text-gray-800">${item.title}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${item.category}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase">Online</span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="deleteAsset('${item.id}')" class="text-red-500 hover:bg-red-50 p-2 rounded-full transition">
+                            <span class="material-icons-outlined text-sm">delete</span>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Asset Management
+        function openAsset(id) {
+            const item = db.find(a => a.id === id);
+            if(!item) return;
+            document.getElementById('detail-title').innerText = item.title;
+            document.getElementById('detail-desc').innerText = item.desc;
+            document.getElementById('preview-iframe').src = item.url || 'about:blank';
+            document.getElementById('detail-meta').innerHTML = `
+                <p><b>ID:</b> ${item.id}</p>
+                <p><b>Kategorie:</b> ${item.category}</p>
+                <p><b>Status:</b> Cloud Sync Aktiv</p>
+            `;
+            switchView('asset-detail');
+        }
+
+        function deleteAsset(id) {
+            if(confirm('Möchten Sie dieses Asset wirklich aus der Cloud löschen?')) {
+                db = db.filter(a => a.id !== id);
+                saveData();
+            }
+        }
+
+        // Modal Logic
+        function openUploadModal() { document.getElementById('upload-modal').classList.add('active'); }
+        function closeUploadModal() { document.getElementById('upload-modal').classList.remove('active'); }
+
+        document.getElementById('asset-form').onsubmit = (e) => {
+            e.preventDefault();
+            const newItem = {
+                id: document.getElementById('form-id').value,
+                title: document.getElementById('form-title').value,
+                category: document.getElementById('form-category').value,
+                url: document.getElementById('form-url').value,
+                desc: document.getElementById('form-desc').value
+            };
+            db.push(newItem);
+            saveData();
+            closeUploadModal();
+            e.target.reset();
+        };
+
+        window.onload = renderAll;
+    </script>
+</body>
+</html>
