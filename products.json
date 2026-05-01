@@ -5,7 +5,7 @@
     "category": "HTML Templates",
     "price": "Kontaktieren",
     "thumbnail": "https://ibb.co/BWwFVj6",
-    "previewUrl": "https://via.placeholder.com/1200x800.png?text=Modern+Landing+Page+Preview",
+    "previewUrl": "https://sites.google.com/view/webshop-bestell-fastfood/startseite",
     "description": "Responsives Landing-Page-Template mit Hero-Bereich, CTA und Kundenstimmen.",
     "features": [
       "Responsives Grid",
@@ -13,10 +13,10 @@
       "Farbschema anpassbar"
     ],
     "specs": {
-      "Dateiformat": "HTML/CSS",
+      "Dateiformat": "HTML/CSS/Javascript/json",
       "Editor": "VS Code / Notepad++",
       "Browser": "Chrome, Firefox, Edge",
-      "Lizenz": "Kostenlos"
+      "Lizenz": "Per leihgabe & Kauf"
     },
     "downloadUrl": "https://example.com/download/101",
     "details": {
