@@ -1,1 +1,32 @@
-[{"id":1,"name":"Product 1","description":"This is product 1.","image":"https://example.com/real-image1.jpg","preview_link":"https://example.com/preview1"},{"id":2,"name":"Product 2","description":"This is product 2.","image":"https://example.com/real-image2.jpg","preview_link":"https://example.com/preview2"},{"id":3,"name":"Product 3","description":"This is product 3.","image":"https://example.com/real-image3.jpg","preview_link":"https://example.com/preview3"}]
+[  
+  {  
+    "title": "Product 1",  
+    "description": "Description for product 1",  
+    "price": 100,  
+    "features": ["Feature 1", "Feature 2"],  
+    "specs": {"Spec 1": "Value 1", "Spec 2": "Value 2"},  
+    "details": {"Detail 1": "Detail Value 1"},  
+    "thumbnail": "https://example.com/image1.jpg",  
+    "previewUrl": "https://example.com/preview1"  
+  },  
+  {  
+    "title": "Product 2",  
+    "description": "Description for product 2",  
+    "price": 200,  
+    "features": ["Feature A", "Feature B"],  
+    "specs": {"Spec A": "Value A", "Spec B": "Value B"},  
+    "details": {"Detail A": "Detail Value A"},  
+    "thumbnail": "https://example.com/image2.jpg",  
+    "previewUrl": "https://example.com/preview2"  
+  },  
+  {  
+    "title": "Product 3",  
+    "description": "Description for product 3",  
+    "price": 300,  
+    "features": ["Feature X", "Feature Y"],  
+    "specs": {"Spec X": "Value X", "Spec Y": "Value Y"},  
+    "details": {"Detail X": "Detail Value X"},  
+    "thumbnail": "https://example.com/image3.jpg",  
+    "previewUrl": "https://example.com/preview3"  
+  }  
+]
